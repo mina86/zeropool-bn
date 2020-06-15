@@ -1,15 +1,22 @@
-use core::cmp::Ordering;
+use std::cmp::Ordering;
 use rand::Rng;
 
 #[cfg(feature = "rustc-serialize")]
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use byteorder::{BigEndian, ByteOrder};
 
+#[cfg(feature = "borsh")]
+use borsh::{BorshSerialize, BorshDeserialize};
+
+
 /// 256-bit, stack allocated biginteger for use in prime field
 /// arithmetic.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 #[repr(C)]
 pub struct U256(pub [u128; 2]);
+
+
 
 impl From<[u64; 4]> for U256 {
     fn from(d: [u64; 4]) -> Self {
@@ -147,6 +154,7 @@ impl U512 {
         U512(n)
     }
 }
+
 
 #[cfg(feature = "rustc-serialize")]
 impl Encodable for U512 {

@@ -1,5 +1,5 @@
 use alloc::vec::Vec;
-use core::ops::{Add, Mul, Neg, Sub};
+use std::ops::{Add, Mul, Neg, Sub};
 use rand::Rng;
 use fields::FieldElement;
 use arith::{U256, U512};
@@ -7,11 +7,34 @@ use arith::{U256, U512};
 #[cfg(feature = "rustc-serialize")]
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
+#[cfg(feature = "borsh")]
+use borsh::{BorshSerialize, BorshDeserialize};
+
+#[cfg(feature = "borsh")]
+use std::io::{Error, ErrorKind, Write};
+
 macro_rules! field_impl {
     ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug)]
         #[repr(C)]
         pub struct $name(U256);
+
+
+        #[cfg(feature = "borsh")]
+        impl BorshSerialize for $name {
+            fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Error> {
+                U256::from(self.0).serialize(writer)
+            }
+        }
+        
+        #[cfg(feature = "borsh")]
+        impl BorshDeserialize for $name {
+            fn deserialize(buf: &mut &[u8]) -> Result<Self, Error> {
+                let num = U256::deserialize(buf)?;
+                Self::new(num).ok_or_else(|| Error::new(ErrorKind::InvalidData, "integer is not less than modulus"))
+            }
+        }
+        
 
         impl From<$name> for U256 {
             #[inline]

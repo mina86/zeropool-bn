@@ -5,7 +5,7 @@ mod fq12;
 
 use arith::U256;
 use rand::Rng;
-use core::ops::{Add, Mul, Neg, Sub};
+use std::ops::{Add, Mul, Neg, Sub};
 use alloc::fmt::Debug;
 
 pub use self::fp::{const_fq, Fq, Fr};
@@ -26,7 +26,7 @@ pub trait FieldElement
     + Debug {
     fn zero() -> Self;
     fn one() -> Self;
-    fn random<R: Rng>(&mut R) -> Self;
+    fn random<R: Rng>(rng: &mut R) -> Self;
     fn is_zero(&self) -> bool;
     fn squared(&self) -> Self {
         (*self) * (*self)

@@ -1,10 +1,13 @@
-use core::ops::{Add, Mul, Neg, Sub};
+use std::ops::{Add, Mul, Neg, Sub};
 use rand::Rng;
 use fields::{const_fq, FieldElement, Fq};
 use arith::{U256, U512};
 
 #[cfg(feature = "rustc-serialize")]
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
+
+#[cfg(feature = "borsh")]
+use borsh::{BorshSerialize, BorshDeserialize};
 
 #[inline]
 fn fq_non_residue() -> Fq {
@@ -37,6 +40,7 @@ pub fn fq2_nonresidue() -> Fq2 {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 #[repr(C)]
 pub struct Fq2 {
     c0: Fq,

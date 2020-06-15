@@ -1,11 +1,18 @@
 use fields::{const_fq, FieldElement, Fq, Fq12, Fq2, Fr, fq2_nonresidue};
 use arith::U256;
-use core::{fmt, ops::{Add, Mul, Neg, Sub}};
+use std::{fmt, ops::{Add, Mul, Neg, Sub}};
 use rand::Rng;
 use alloc::vec::Vec;
 
 #[cfg(feature = "rustc-serialize")]
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
+
+#[cfg(feature = "borsh")]
+use borsh::{BorshSerialize, BorshDeserialize};
+
+#[cfg(feature = "borsh")]
+use std::io::{self, ErrorKind, Write};
+
 
 // This is the NAF version of ate_loop_count. Entries are all mod 4, so 3 = -1
 // n.b. ate_loop_count = 0x19d797039be763ba8
@@ -32,10 +39,18 @@ pub trait GroupElement
     fn double(&self) -> Self;
 }
 
+
+
+
+
 pub trait GroupParams: Sized + fmt::Debug {
-    #[cfg(feature = "rustc-serialize")]
+    #[cfg(all(feature = "rustc-serialize", feature = "borsh"))]
+    type Base: FieldElement + Decodable + Encodable + BorshSerialize + BorshDeserialize;
+    #[cfg(all(feature = "rustc-serialize", not(feature = "borsh")))]
     type Base: FieldElement + Decodable + Encodable;
-    #[cfg(not(feature = "rustc-serialize"))]
+    #[cfg(all(not(feature = "rustc-serialize"), feature = "borsh"))]
+    type Base: FieldElement + BorshSerialize + BorshDeserialize;
+    #[cfg(all(not(feature = "rustc-serialize"), not(feature = "borsh")))]
     type Base: FieldElement;
 
     fn name() -> &'static str;
@@ -51,6 +66,39 @@ pub struct G<P: GroupParams> {
     x: P::Base,
     y: P::Base,
     z: P::Base,
+}
+
+#[cfg(feature = "borsh")]
+impl<P: GroupParams> BorshSerialize for G<P> {
+    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), io::Error> {
+        match self.to_affine() {
+            Some(p) => {
+                p.x.serialize(writer)?;
+                p.y.serialize(writer)?;
+            },
+            None => {
+                P::Base::zero().serialize(writer)?;
+                P::Base::zero().serialize(writer)?;                
+            } 
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "borsh")]
+impl<P: GroupParams> BorshDeserialize for G<P> {
+    fn deserialize(buf: &mut &[u8]) -> Result<Self, io::Error> {
+        let x = P::Base::deserialize(buf)?;
+        let y = P::Base::deserialize(buf)?;
+        if x.is_zero() && y.is_zero() {
+            Ok(Self::zero())
+        } else {
+            AffineG::<P>::new(x, y).map(|p| p.to_jacobian()).map_err(|e| match e {
+                Error::NotOnCurve => io::Error::new(ErrorKind::InvalidData, "point is not on the curve"),
+                Error::NotInSubgroup => io::Error::new(ErrorKind::InvalidData, "point is not in the subgroup"),
+            }) 
+        }
+    }
 }
 
 impl<P: GroupParams> G<P> {
@@ -105,9 +153,10 @@ impl<P: GroupParams> AffineG<P> {
                     z: P::Base::one(),
                 };
 
-                if (p * (-Fr::one())) + p != G::zero() {
-                    return Err(Error::NotInSubgroup);
-                }
+                // // No subgroup checks are used for Ethereum alt_bn128 curve
+                // if (p * (-Fr::one())) + p != G::zero() {
+                //     return Err(Error::NotInSubgroup);
+                // }
             }
 
             Ok(AffineG { x: x, y: y })
