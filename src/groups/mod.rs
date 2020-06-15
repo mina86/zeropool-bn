@@ -59,6 +59,8 @@ pub trait GroupParams: Sized + fmt::Debug {
     fn check_order() -> bool {
         false
     }
+
+    fn subgroup_check(p:G<Self>) -> bool {true}
 }
 
 #[repr(C)]
@@ -153,10 +155,9 @@ impl<P: GroupParams> AffineG<P> {
                     z: P::Base::one(),
                 };
 
-                // // No subgroup checks are used for Ethereum alt_bn128 curve
-                // if (p * (-Fr::one())) + p != G::zero() {
-                //     return Err(Error::NotInSubgroup);
-                // }
+                if !P::subgroup_check(p) {
+                    return Err(Error::NotInSubgroup);
+                }
             }
 
             Ok(AffineG { x: x, y: y })
@@ -515,9 +516,15 @@ pub struct G2Params;
 impl GroupParams for G2Params {
     type Base = Fq2;
 
+    fn subgroup_check(p:G<Self>) -> bool {
+        (p * (-Fr::one())) + p == G::zero()
+    }
+
     fn name() -> &'static str {
         "G2"
     }
+
+    
 
     fn one() -> G<Self> {
         G {
