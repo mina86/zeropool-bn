@@ -1,6 +1,6 @@
 [package]
 name = "zeropool-bn"
-version = "0.5.2"
+version = "0.5.3"
 authors = ["Sean Bowe <ewillbefull@gmail.com>"]
 description = "Pairing cryptography with the Barreto-Naehrig curve"
 keywords = ["pairing","crypto","cryptography"]
@@ -10,14 +10,13 @@ repository = "https://github.com/zcash/bn"
 license = "MIT OR Apache-2.0"
 
 [features]
-default = ["rustc-serialize", "borsh"]
+default = ["borsh"]
 
 [[bench]]
 name = "api"
 
 [dependencies]
 rand = { version = "0.5", features = ["i128_support"], default-features = false }
-rustc-serialize = { version = "0.3", optional = true }
 byteorder = { version = "1.0", features = ["i128"], default-features = false }
 crunchy = "0.2.1"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
@@ -28,7 +27,3 @@ borsh = {version = "0.6.2", optional = true}
 [dev-dependencies]
 rand = { version = "0.5", features = ["i128_support"] }
 
-[dev-dependencies.bincode]
-version = "0.6"
-default-features = false
-features = ["rustc-serialize"]

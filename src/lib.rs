@@ -4,8 +4,6 @@ extern crate byteorder;
 #[macro_use]
 extern crate crunchy;
 extern crate rand;
-#[cfg(feature = "rustc-serialize")]
-extern crate rustc_serialize;
 #[cfg(feature = "borsh")]
 extern crate borsh;
 #[macro_use] extern crate lazy_static;
@@ -24,7 +22,6 @@ use std::ops::{Add, Mul, Neg, Sub};
 use rand::Rng;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcDecodable, RustcEncodable))]
 #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 #[repr(C)]
 pub struct Fr(fields::Fr);
@@ -135,7 +132,6 @@ impl From<FieldError> for CurveError {
 pub use groups::Error as GroupError;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcDecodable, RustcEncodable))]
 #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 #[repr(C)]
 pub struct Fq(fields::Fq);
@@ -335,7 +331,6 @@ pub trait Group
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcDecodable, RustcEncodable))]
 #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 #[repr(C)]
 pub struct G1(groups::G1);
@@ -448,7 +443,6 @@ impl Mul<Fr> for G1 {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcDecodable, RustcEncodable))]
 #[repr(C)]
 pub struct AffineG1(groups::AffineG1);
 
@@ -485,7 +479,6 @@ impl From<AffineG1> for G1 {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcDecodable, RustcEncodable))]
 #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 #[repr(C)]
 pub struct G2(groups::G2);
@@ -653,7 +646,6 @@ pub fn miller_loop_batch(pairs: &[(G2, G1)]) -> Result<Gt, CurveError> {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcDecodable, RustcEncodable))]
 #[repr(C)]
 pub struct AffineG2(groups::AffineG2);
 
