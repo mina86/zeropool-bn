@@ -21,7 +21,7 @@ macro_rules! field_impl {
         #[cfg(feature = "borsh")]
         impl BorshSerialize for $name {
             fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Error> {
-                U256::from(self.0).serialize(writer)
+                U256::from(*self).serialize(writer)
             }
         }
         
