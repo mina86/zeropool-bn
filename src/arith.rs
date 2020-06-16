@@ -159,14 +159,14 @@ impl U512 {
 #[cfg(feature = "rustc-serialize")]
 impl Encodable for U512 {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        let mut buf = [0; (4 * 16)];
+        let mut buf = [0; 64];
 
         for (l, i) in (0..4).rev().zip((0..4).map(|i| i * 16)) {
             BigEndian::write_u128(&mut buf[i..], self.0[l]);
         }
 
-        for i in 0..(4 * 16) {
-            try!(s.emit_u8(buf[i]));
+        for i in 0..64 {
+            s.emit_u8(buf[i])?;
         }
 
         Ok(())
@@ -176,10 +176,10 @@ impl Encodable for U512 {
 #[cfg(feature = "rustc-serialize")]
 impl Decodable for U512 {
     fn decode<S: Decoder>(s: &mut S) -> Result<U512, S::Error> {
-        let mut buf = [0; (4 * 16)];
+        let mut buf = [0; 64];
 
-        for i in 0..(4 * 16) {
-            buf[i] = try!(s.read_u8());
+        for i in 0..64 {
+            buf[i] = s.read_u8()?;
         }
 
         Ok(U512::interpret(&buf))
@@ -189,14 +189,14 @@ impl Decodable for U512 {
 #[cfg(feature = "rustc-serialize")]
 impl Encodable for U256 {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        let mut buf = [0; (2 * 16)];
+        let mut buf = [0; 32];
 
         for (l, i) in (0..2).rev().zip((0..2).map(|i| i * 16)) {
             BigEndian::write_u128(&mut buf[i..], self.0[l]);
         }
 
-        for i in 0..(2 * 16) {
-            try!(s.emit_u8(buf[i]));
+        for i in 0..32 {
+            s.emit_u8(buf[i])?;
         }
 
         Ok(())
@@ -206,10 +206,10 @@ impl Encodable for U256 {
 #[cfg(feature = "rustc-serialize")]
 impl Decodable for U256 {
     fn decode<S: Decoder>(s: &mut S) -> Result<U256, S::Error> {
-        let mut buf = [0; (2 * 16)];
+        let mut buf = [0; 32];
 
-        for i in 0..(2 * 16) {
-            buf[i] = try!(s.read_u8());
+        for i in 0..32 {
+            buf[i] = s.read_u8()?;
         }
 
         U256::from_slice(&buf).map_err(|_| s.error("Invalid input length; Also unreachable;"))

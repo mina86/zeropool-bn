@@ -60,7 +60,9 @@ pub trait GroupParams: Sized + fmt::Debug {
         false
     }
 
-    fn subgroup_check(p:G<Self>) -> bool {true}
+    fn subgroup_check(p:G<Self>) -> bool {
+        (p * (-Fr::one())) + p == G::zero()
+    }
 }
 
 #[repr(C)]
@@ -288,7 +290,7 @@ impl<P: GroupParams> Encodable for G<P> {
             l.encode(s)
         } else {
             let l: u8 = 4;
-            try!(l.encode(s));
+            l.encode(s)?;
             self.to_affine().unwrap().encode(s)
         }
     }
@@ -297,8 +299,8 @@ impl<P: GroupParams> Encodable for G<P> {
 #[cfg(feature = "rustc-serialize")]
 impl<P: GroupParams> Encodable for AffineG<P> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        try!(self.x.encode(s));
-        try!(self.y.encode(s));
+        self.x.encode(s)?;
+        self.y.encode(s)?;
 
         Ok(())
     }
@@ -307,11 +309,11 @@ impl<P: GroupParams> Encodable for AffineG<P> {
 #[cfg(feature = "rustc-serialize")]
 impl<P: GroupParams> Decodable for G<P> {
     fn decode<S: Decoder>(s: &mut S) -> Result<G<P>, S::Error> {
-        let l = try!(u8::decode(s));
+        let l = u8::decode(s)?;
         if l == 0 {
             Ok(G::zero())
         } else if l == 4 {
-            Ok(try!(AffineG::decode(s)).to_jacobian())
+            Ok(AffineG::decode(s)?.to_jacobian())
         } else {
             Err(s.error("invalid leading byte for uncompressed group element"))
         }
@@ -321,8 +323,8 @@ impl<P: GroupParams> Decodable for G<P> {
 #[cfg(feature = "rustc-serialize")]
 impl<P: GroupParams> Decodable for AffineG<P> {
     fn decode<S: Decoder>(s: &mut S) -> Result<AffineG<P>, S::Error> {
-        let x = try!(P::Base::decode(s));
-        let y = try!(P::Base::decode(s));
+        let x = P::Base::decode(s)?;
+        let y = P::Base::decode(s)?;
 
         Self::new(x, y).map_err(|e| match e {
             Error::NotOnCurve => s.error("point is not on the curve"),
@@ -479,6 +481,10 @@ pub struct G1Params;
 impl GroupParams for G1Params {
     type Base = Fq;
 
+    fn subgroup_check(_:G<Self>) -> bool {
+        true
+    }
+
     fn name() -> &'static str {
         "G1"
     }
@@ -515,10 +521,6 @@ pub struct G2Params;
 
 impl GroupParams for G2Params {
     type Base = Fq2;
-
-    fn subgroup_check(p:G<Self>) -> bool {
-        (p * (-Fr::one())) + p == G::zero()
-    }
 
     fn name() -> &'static str {
         "G2"
