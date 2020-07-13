@@ -328,6 +328,7 @@ pub trait Group
     fn random<R: Rng>(rng: &mut R) -> Self;
     fn is_zero(&self) -> bool;
     fn normalize(&mut self);
+    fn multiexp(items:&[(Self, Fr)]) -> Self;
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -388,6 +389,12 @@ impl G1 {
 }
 
 impl Group for G1 {
+
+    fn multiexp(items:&[(Self, Fr)]) -> Self {
+        let items = items.iter().map(|e| (e.0 .0, e.1.into_u256())).collect::<Vec<_>>();
+        Self(crate::groups::pippenger(&items[..]))
+    }
+
     fn zero() -> Self {
         G1(groups::G1::zero())
     }
@@ -540,6 +547,11 @@ impl G2 {
 }
 
 impl Group for G2 {
+    fn multiexp(items:&[(Self, Fr)]) -> Self {
+        let items = items.iter().map(|e| (e.0 .0, e.1.into_u256())).collect::<Vec<_>>();
+        Self(crate::groups::pippenger(&items[..]))
+    }
+
     fn zero() -> Self {
         G2(groups::G2::zero())
     }
@@ -680,6 +692,8 @@ impl From<AffineG2> for G2 {
         G2(affine.0.to_jacobian())
     }
 }
+
+
 
 #[cfg(test)]
 mod tests {

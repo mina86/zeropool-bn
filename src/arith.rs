@@ -205,6 +205,7 @@ pub enum Error {
 }
 
 impl U256 {
+
     /// Initialize U256 from slice of bytes (big endian)
     pub fn from_slice(s: &[u8]) -> Result<U256, Error> {
         if s.len() != 32 {

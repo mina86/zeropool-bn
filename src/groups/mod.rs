@@ -37,6 +37,80 @@ pub trait GroupElement
 }
 
 
+pub fn pippenger<P: GroupParams>(items: &[(G<P>, U256)]) -> G<P>
+{
+    fn shr_lower(x:U256, n:usize) -> u128 {
+        let [l, u] = x.0;
+        if n==0 {
+            l
+        } else if n >= 256 {
+            0
+        } else if n >= 128 {
+            u >> (n-128)
+        } else {
+            (l >> n) + (u << (128-n))
+        }
+        
+    }
+
+    let items_len = items.len();
+
+    let c = if items_len < 4 {
+        1
+    } else if items_len < 18 {
+        2
+    } else if items_len < 48 {
+        3
+    } else if items_len < 120 {
+        4
+    } else if items_len < 289 {
+        5
+    } else if items_len < 684 {
+        6
+    } else {
+        (items_len as f64).ln().powf(1.065).ceil() as usize
+    };
+
+
+    let mask:u128 = (1 << c) - 1;
+    const NUM_BITS:usize = 256;
+
+    let mut windows = vec![];
+    let mut buckets = vec![G::zero(); (1 << c) - 1];
+
+    for cur in (0..NUM_BITS).step_by(c) {
+        let mut acc = G::zero();
+
+        buckets.iter_mut().for_each(|e| *e = G::zero());
+
+        for (g, s) in items.iter() {
+            let index = (shr_lower(*s, cur) & mask) as usize;
+            if index != 0 {
+                buckets[index - 1] = buckets[index - 1] + *g;
+            }
+        }
+
+        let mut running_sum = G::zero();
+        for exp in buckets.iter().rev() {
+            running_sum = running_sum + *exp;
+            acc = acc + running_sum;
+        }
+
+        windows.push(acc);
+    }
+
+    let mut acc = G::zero();
+
+    for window in windows.into_iter().rev() {
+        for _ in 0..c {
+            acc = acc.double();
+        }
+
+        acc = acc + window;
+    }
+
+    acc
+}
 
 
 
@@ -1113,6 +1187,31 @@ fn test_batch_bilinearity_one() {
     let b = pairing_batch(&sp_vec, &q_vec);
     let c = pairing_batch(&p_vec, &sq_vec);
     assert_eq!(b, c);
+}
+
+#[test] 
+fn test_pippenger() {
+    use rand::{SeedableRng, StdRng};
+    let seed = [
+        0, 0, 0, 0, 0, 0, 64, 13, // 103245
+        0, 0, 0, 0, 0, 0, 176, 2, // 191922
+        0, 0, 0, 0, 0, 0, 0, 13, // 1293
+        0, 0, 0, 0, 0, 0, 96, 7u8, // 192103
+    ];
+    const NITEMS:usize = 128;
+    let ref mut rng = StdRng::from_seed(seed);
+
+    let items = (0..NITEMS).map(|_| (G1::random(rng),  U256::from(Fr::random(rng)))).collect::<Vec<_>>();
+
+    let mut naive_acc = G1::zero();
+    for e in items.iter() {
+        naive_acc = naive_acc + e.0*Fr::new(e.1).unwrap();
+    }
+
+    let opti_acc = pippenger(&items);
+
+    assert_eq!(naive_acc, opti_acc);
+
 }
 
 #[test]
