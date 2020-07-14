@@ -37,7 +37,7 @@ pub trait GroupElement
 }
 
 
-pub fn pippenger<P: GroupParams>(items: &[(G<P>, U256)]) -> G<P>
+pub fn pippenger<P: GroupParams>(items: &[(AffineG<P>, U256)]) -> G<P>
 {
     fn shr_lower(x:U256, n:usize) -> u128 {
         let [l, u] = x.0;
@@ -68,7 +68,7 @@ pub fn pippenger<P: GroupParams>(items: &[(G<P>, U256)]) -> G<P>
     } else if items_len < 684 {
         6
     } else {
-        (items_len as f64).ln().powf(1.065).ceil() as usize
+        (items_len as f64).ln().ceil() as usize
     };
 
 
@@ -157,6 +157,24 @@ impl<P: GroupParams> BorshSerialize for G<P> {
 }
 
 #[cfg(feature = "borsh")]
+impl<P: GroupParams> BorshSerialize for AffineGEx<P> {
+    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), io::Error> {
+        match self {
+            AffineGEx::Point(p) => {
+                p.x.serialize(writer)?;
+                p.y.serialize(writer)?;
+            },
+            AffineGEx::Zero => {
+                P::Base::zero().serialize(writer)?;
+                P::Base::zero().serialize(writer)?;                
+            } 
+        }
+        Ok(())
+    }
+}
+
+
+#[cfg(feature = "borsh")]
 impl<P: GroupParams> BorshDeserialize for G<P> {
     fn deserialize(buf: &mut &[u8]) -> Result<Self, io::Error> {
         let x = P::Base::deserialize(buf)?;
@@ -171,6 +189,23 @@ impl<P: GroupParams> BorshDeserialize for G<P> {
         }
     }
 }
+
+#[cfg(feature = "borsh")]
+impl<P: GroupParams> BorshDeserialize for AffineGEx<P> {
+    fn deserialize(buf: &mut &[u8]) -> Result<Self, io::Error> {
+        let x = P::Base::deserialize(buf)?;
+        let y = P::Base::deserialize(buf)?;
+        if x.is_zero() && y.is_zero() {
+            Ok(AffineGEx::Zero)
+        } else {
+            AffineG::<P>::new(x, y).map(|p| AffineGEx::Point(p)).map_err(|e| match e {
+                Error::NotOnCurve => io::Error::new(ErrorKind::InvalidData, "point is not on the curve"),
+                Error::NotInSubgroup => io::Error::new(ErrorKind::InvalidData, "point is not in the subgroup"),
+            }) 
+        }
+    }
+}
+
 
 impl<P: GroupParams> G<P> {
     pub fn new(x: P::Base, y: P::Base, z: P::Base) -> Self {
@@ -206,6 +241,11 @@ impl<P: GroupParams> G<P> {
 pub struct AffineG<P: GroupParams> {
     x: P::Base,
     y: P::Base,
+}
+#[derive(Debug)]
+pub enum AffineGEx<P:GroupParams> {
+    Zero,
+    Point(AffineG<P>)
 }
 
 #[derive(Debug)]
@@ -289,6 +329,20 @@ impl<P: GroupParams> Clone for AffineG<P> {
 
 impl<P: GroupParams> Copy for AffineG<P> {}
 
+
+impl<P: GroupParams> Clone for AffineGEx<P> {
+    fn clone(&self) -> Self {
+        match self {
+            AffineGEx::Zero => AffineGEx::Zero,
+            AffineGEx::Point(p) => AffineGEx::Point(p.clone())
+        }
+    }
+}
+
+impl<P: GroupParams> Copy for AffineGEx<P> {}
+
+
+
 impl<P: GroupParams> PartialEq for G<P> {
     fn eq(&self, other: &Self) -> bool {
         if self.is_zero() {
@@ -346,6 +400,15 @@ impl<P: GroupParams> AffineG<P> {
             y: self.y,
             z: P::Base::one(),
         }
+    }
+
+    pub fn from_jacobian(p:G<P>) -> Option<Self> {
+        let z_inv = p.z.inverse()?;
+        let zz_inv = z_inv.squared();
+        Some(AffineG {
+            x: p.x*zz_inv,
+            y: p.y*zz_inv*z_inv
+        })
     }
 }
 
@@ -414,6 +477,80 @@ impl<P: GroupParams> Mul<Fr> for G<P> {
         res
     }
 }
+
+fn field_double<F:FieldElement>(x:F) -> F {x+x}
+
+impl<P:GroupParams> Add<AffineG<P>> for G<P> {
+    type Output = G<P>;
+
+    // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-madd-2007-bl
+    fn add(mut self, other: AffineG<P>) -> Self::Output {
+        
+        if self.is_zero() {
+            return other.to_jacobian()
+        }
+
+        // Z1Z1 = Z1^2
+        let z1z1 = self.z.squared();
+
+        // U2 = X2*Z1Z1
+        let u2 = other.x * z1z1;
+
+        // S2 = Y2*Z1*Z1Z1
+        let s2 = other.y * self.z * z1z1;
+
+        if self.x == u2 && self.y == s2 {
+            // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#mdbl-2007-bl
+            let xx = other.x.squared();
+            let yy = other.y.squared();
+            let yyyy = yy.squared();
+            let s = field_double((other.x+yy).squared() - xx - yyyy);
+            let m = xx+xx+xx;
+            let t = m.squared()-field_double(s);
+            self.x = t;
+            self.y = m*(s-t) - field_double(field_double(field_double(yyyy)));
+            self.z = field_double(other.y);
+            return self;
+        } else {
+            // H = U2-X1
+            let h = u2 - self.x;
+
+            // HH = H^2
+            let hh = h.squared();
+
+            // I = 4*HH
+            let i = field_double(field_double(hh));
+
+            // J = H*I
+            let j = h*i;
+
+            // r = 2*(S2-Y1)
+            let r = field_double(s2-self.y);
+
+            // V = X1*I
+            let v = self.x * i;
+
+            // X3 = r^2 - J - 2*V
+            self.x = r.squared() - j - field_double(v);
+
+            // Y3 = r*(V-X3)-2*Y1*J
+            self.y = r*(v-self.x) - field_double(self.y*j);
+
+
+            // Z3 = (Z1+H)^2-Z1Z1-HH
+            self.z = (self.z+h).squared() - z1z1 - hh;
+
+            if self.z.is_zero() {
+                return G::zero()
+            }
+
+            return self
+        }
+    }
+
+
+} 
+
 
 impl<P: GroupParams> Add<G<P>> for G<P> {
     type Output = G<P>;
@@ -532,6 +669,8 @@ impl GroupParams for G1Params {
 pub type G1 = G<G1Params>;
 
 pub type AffineG1 = AffineG<G1Params>;
+
+pub type AffineG1Ex = AffineGEx<G1Params>;
 
 #[derive(Debug)]
 pub struct G2Params;
@@ -1207,6 +1346,8 @@ fn test_pippenger() {
     for e in items.iter() {
         naive_acc = naive_acc + e.0*Fr::new(e.1).unwrap();
     }
+
+    let items = items.iter().map(|e| (AffineG1::from_jacobian(e.0).unwrap(), e.1)).collect::<Vec<_>>();
 
     let opti_acc = pippenger(&items);
 

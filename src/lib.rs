@@ -328,7 +328,6 @@ pub trait Group
     fn random<R: Rng>(rng: &mut R) -> Self;
     fn is_zero(&self) -> bool;
     fn normalize(&mut self);
-    fn multiexp(items:&[(Self, Fr)]) -> Self;
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -388,13 +387,18 @@ impl G1 {
     }
 }
 
+pub fn g1_multiexp(items:&[(AffineG1Ex, Fr)]) -> G1 {
+    let items = items.iter().filter_map(
+        |e| {
+            match e.0 .0 {
+                groups::AffineGEx::Zero => None,
+                groups::AffineGEx::Point(p) => Some((p, e.1.into_u256()))
+            }
+        }).collect::<Vec<_>>();
+    G1(crate::groups::pippenger(&items[..]))
+}
+
 impl Group for G1 {
-
-    fn multiexp(items:&[(Self, Fr)]) -> Self {
-        let items = items.iter().map(|e| (e.0 .0, e.1.into_u256())).collect::<Vec<_>>();
-        Self(crate::groups::pippenger(&items[..]))
-    }
-
     fn zero() -> Self {
         G1(groups::G1::zero())
     }
@@ -452,6 +456,13 @@ impl Mul<Fr> for G1 {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub struct AffineG1(groups::AffineG1);
+
+
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
+#[repr(C)]
+pub struct AffineG1Ex(groups::AffineG1Ex);
+
 
 impl AffineG1 {
     pub fn new(x: Fq, y: Fq) -> Result<Self, GroupError> {
@@ -547,11 +558,6 @@ impl G2 {
 }
 
 impl Group for G2 {
-    fn multiexp(items:&[(Self, Fr)]) -> Self {
-        let items = items.iter().map(|e| (e.0 .0, e.1.into_u256())).collect::<Vec<_>>();
-        Self(crate::groups::pippenger(&items[..]))
-    }
-
     fn zero() -> Self {
         G2(groups::G2::zero())
     }
