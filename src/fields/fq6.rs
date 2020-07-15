@@ -1,9 +1,9 @@
 use fields::{const_fq, FieldElement, Fq, Fq2};
-use std::ops::{Add, Mul, Neg, Sub};
 use rand::Rng;
+use std::ops::{Add, Mul, Neg, Sub};
 
 #[cfg(feature = "borsh")]
-use borsh::{BorshSerialize, BorshDeserialize};
+use borsh::{BorshDeserialize, BorshSerialize};
 
 fn frobenius_coeffs_c1(n: usize) -> Fq2 {
     match n % 6 {

@@ -1,10 +1,9 @@
 #![feature(test)]
-extern crate zeropool_bn;
 extern crate rand;
 extern crate test;
+extern crate zeropool_bn;
 
 use zeropool_bn::*;
-
 
 const SAMPLES: usize = 30;
 
@@ -27,7 +26,6 @@ macro_rules! benchmark(
         }
     )
 );
-
 
 benchmark!(fr_addition,
            input(rng) = (Fr::random(rng), Fr::random(rng));

@@ -1,6 +1,6 @@
-extern crate zeropool_bn;
 extern crate rand;
-use zeropool_bn::{Group, Fr, G1, G2, pairing};
+extern crate zeropool_bn;
+use zeropool_bn::{pairing, Fr, Group, G1, G2};
 
 fn main() {
     let rng = &mut rand::thread_rng();
