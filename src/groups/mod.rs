@@ -60,18 +60,8 @@ pub fn pippenger<P: GroupParams>(items: &[(AffineG<P>, U256)]) -> G<P> {
 
     let c = if items_len < 4 {
         1
-    } else if items_len < 18 {
-        2
-    } else if items_len < 48 {
-        3
-    } else if items_len < 120 {
-        4
-    } else if items_len < 289 {
-        5
-    } else if items_len < 684 {
-        6
     } else {
-        (items_len as f64).ln().ceil() as usize
+        crate::ilog(items_len as u64) as usize
     };
 
     let mask: u128 = (1 << c) - 1;
