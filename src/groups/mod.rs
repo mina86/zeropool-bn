@@ -1,17 +1,17 @@
 use alloc::vec::Vec;
-use arith::U256;
-use fields::{const_fq, fq2_nonresidue, FieldElement, Fq, Fq12, Fq2, Fr};
 use rand::Rng;
-use std::{
+use core::{
     fmt,
     ops::{Add, Mul, Neg, Sub},
 };
+use crate::arith::U256;
+use crate::fields::{const_fq, fq2_nonresidue, FieldElement, Fq, Fq12, Fq2, Fr};
 
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
 
 #[cfg(feature = "borsh")]
-use std::io::{self, ErrorKind, Write};
+use borsh::maybestd::io::{ErrorKind, Write};
 
 // This is the NAF version of ate_loop_count. Entries are all mod 4, so 3 = -1
 // n.b. ate_loop_count = 0x19d797039be763ba8
@@ -131,7 +131,7 @@ pub struct G<P: GroupParams> {
 
 #[cfg(feature = "borsh")]
 impl<P: GroupParams> BorshSerialize for G<P> {
-    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), io::Error> {
+    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), borsh::maybestd::io::Error> {
         match self.to_affine() {
             Some(p) => {
                 p.x.serialize(writer)?;
@@ -148,7 +148,7 @@ impl<P: GroupParams> BorshSerialize for G<P> {
 
 #[cfg(feature = "borsh")]
 impl<P: GroupParams> BorshDeserialize for G<P> {
-    fn deserialize(buf: &mut &[u8]) -> Result<Self, io::Error> {
+    fn deserialize(buf: &mut &[u8]) -> Result<Self, borsh::maybestd::io::Error> {
         let x = P::Base::deserialize(buf)?;
         let y = P::Base::deserialize(buf)?;
         if x.is_zero() && y.is_zero() {
@@ -158,10 +158,10 @@ impl<P: GroupParams> BorshDeserialize for G<P> {
                 .map(|p| p.to_jacobian())
                 .map_err(|e| match e {
                     Error::NotOnCurve => {
-                        io::Error::new(ErrorKind::InvalidData, "point is not on the curve")
+                        borsh::maybestd::io::Error::new(ErrorKind::InvalidData, "point is not on the curve")
                     }
                     Error::NotInSubgroup => {
-                        io::Error::new(ErrorKind::InvalidData, "point is not in the subgroup")
+                        borsh::maybestd::io::Error::new(ErrorKind::InvalidData, "point is not in the subgroup")
                     }
                 })
         }
