@@ -845,7 +845,7 @@ pub fn miller_loop_batch(g2_precomputes: &Vec<G2Precomp>, g1_vec: &Vec<AffineG<G
 
 #[test]
 fn test_miller_loop() {
-    use fields::Fq6;
+    use crate::fields::Fq6;
 
     let g1 = G1::one()
         * Fr::from_str(
@@ -4418,7 +4418,7 @@ pub fn pairing_batch(ps: &[G1], qs: &[G2]) -> Fq12 {
 
 #[test]
 fn test_reduced_pairing() {
-    use fields::Fq6;
+    use crate::fields::Fq6;
 
     let g1 = G1::one()
         * Fr::from_str(
