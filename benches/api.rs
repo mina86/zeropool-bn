@@ -1,9 +1,13 @@
 #![feature(test)]
+
 extern crate rand;
 extern crate test;
 extern crate zeropool_bn;
+extern crate seq_macro;
 
 use zeropool_bn::*;
+use seq_macro::seq;
+
 
 const SAMPLES: usize = 30;
 
@@ -26,6 +30,7 @@ macro_rules! benchmark(
         }
     )
 );
+/*
 
 benchmark!(fr_addition,
            input(rng) = (Fr::random(rng), Fr::random(rng));
@@ -117,3 +122,21 @@ benchmark!(perform_pairing,
 
            pairing(input.0, input.1)
 );
+
+*/
+
+benchmark!(perform_pippenger_empty,
+    input(rng) = vec![];
+
+    G1::multiexp(input)
+);
+
+seq!(N in 0..=16 {
+
+benchmark!(perform_pippenger_#N,
+    input(rng) = (0..1<<N).map(|_| (G1::random(rng), Fr::random(rng))).collect::<Vec<_>>();
+
+    G1::multiexp(input)
+);
+});
+
