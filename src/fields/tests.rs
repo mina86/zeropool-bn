@@ -1,5 +1,5 @@
 use super::FieldElement;
-use rand::{Rng, SeedableRng, StdRng};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 
 fn can_invert<F: FieldElement>() {
     let mut a = F::one();

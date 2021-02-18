@@ -4547,7 +4547,7 @@ fn test_batch_bilinearity_empty() {
 
 #[test]
 fn test_batch_bilinearity_one() {
-    use rand::{SeedableRng, StdRng};
+    use rand::{SeedableRng, rngs::StdRng};
     let seed = [
         0, 0, 0, 0, 0, 0, 64, 13, // 103245
         0, 0, 0, 0, 0, 0, 176, 2, // 191922
@@ -4567,7 +4567,7 @@ fn test_batch_bilinearity_one() {
 
 #[test]
 fn test_pippenger() {
-    use rand::{SeedableRng, StdRng};
+    use rand::{SeedableRng, rngs::StdRng};
     let seed = [
         0, 0, 0, 0, 0, 0, 64, 13, // 103245
         0, 0, 0, 0, 0, 0, 176, 2, // 191922
@@ -4598,7 +4598,7 @@ fn test_pippenger() {
 
 #[test]
 fn test_batch_bilinearity_fifty() {
-    use rand::{SeedableRng, StdRng};
+    use rand::{SeedableRng, rngs::StdRng};
     let seed = [
         0, 0, 0, 0, 0, 0, 64, 13, // 103245
         0, 0, 0, 0, 0, 0, 176, 2, // 191922
@@ -4630,7 +4630,7 @@ fn test_batch_bilinearity_fifty() {
 
 #[test]
 fn test_bilinearity() {
-    use rand::{SeedableRng, StdRng};
+    use rand::{SeedableRng, rngs::StdRng};
     let seed = [
         0, 0, 0, 0, 0, 0, 64, 13, // 103245
         0, 0, 0, 0, 0, 0, 176, 2, // 191922
