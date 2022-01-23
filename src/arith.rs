@@ -1,5 +1,5 @@
 use rand::Rng;
-use std::cmp::Ordering;
+use core::cmp::Ordering;
 
 use byteorder::{BigEndian, ByteOrder};
 

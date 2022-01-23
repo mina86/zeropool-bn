@@ -1,14 +1,14 @@
 use alloc::vec::Vec;
-use arith::{U256, U512};
-use fields::FieldElement;
 use rand::Rng;
-use std::ops::{Add, Mul, Neg, Sub};
+use core::ops::{Add, Mul, Neg, Sub};
+use crate::arith::{U256, U512};
+use crate::fields::FieldElement;
 
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
 
 #[cfg(feature = "borsh")]
-use std::io::{Error, ErrorKind, Write};
+use borsh::maybestd::io::{Error, ErrorKind, Write};
 
 macro_rules! field_impl {
     ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {

@@ -1,6 +1,6 @@
-use fields::{const_fq, FieldElement, Fq, Fq2};
 use rand::Rng;
-use std::ops::{Add, Mul, Neg, Sub};
+use core::ops::{Add, Mul, Neg, Sub};
+use crate::fields::{const_fq, FieldElement, Fq, Fq2};
 
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};

@@ -1,5 +1,5 @@
-#[macro_use]
-extern crate alloc;
+#![cfg_attr(not(feature = "std"), no_std)]
+
 extern crate byteorder;
 #[macro_use]
 extern crate crunchy;
@@ -8,6 +8,12 @@ extern crate borsh;
 extern crate rand;
 #[macro_use]
 extern crate lazy_static;
+
+#[macro_use]
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std as alloc;
 
 pub mod arith;
 mod fields;
@@ -20,7 +26,7 @@ use groups::{G1Params, G2Params, GroupElement, GroupParams};
 
 use alloc::vec::Vec;
 use rand::Rng;
-use std::ops::{Add, Mul, Neg, Sub};
+use core::ops::{Add, Mul, Neg, Sub};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
