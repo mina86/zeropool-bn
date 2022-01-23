@@ -1,6 +1,6 @@
 [package]
 name = "zeropool-bn"
-version = "0.5.10"
+version = "0.5.11"
 authors = ["Sean Bowe <ewillbefull@gmail.com>"]
 description = "Pairing cryptography with the Barreto-Naehrig curve"
 keywords = ["pairing","crypto","cryptography"]
