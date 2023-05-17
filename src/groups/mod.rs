@@ -11,7 +11,7 @@ use crate::fields::{const_fq, fq2_nonresidue, FieldElement, Fq, Fq12, Fq2, Fr};
 use borsh::{BorshDeserialize, BorshSerialize};
 
 #[cfg(feature = "borsh")]
-use borsh::maybestd::io::{ErrorKind, Write};
+use borsh::maybestd::io::{ErrorKind, Read, Write};
 
 // This is the NAF version of ate_loop_count. Entries are all mod 4, so 3 = -1
 // n.b. ate_loop_count = 0x19d797039be763ba8
@@ -148,9 +148,9 @@ impl<P: GroupParams> BorshSerialize for G<P> {
 
 #[cfg(feature = "borsh")]
 impl<P: GroupParams> BorshDeserialize for G<P> {
-    fn deserialize(buf: &mut &[u8]) -> Result<Self, borsh::maybestd::io::Error> {
-        let x = P::Base::deserialize(buf)?;
-        let y = P::Base::deserialize(buf)?;
+    fn deserialize_reader<R: Read>(reader: &mut R) -> Result<Self, borsh::maybestd::io::Error> {
+        let x = P::Base::deserialize_reader(reader)?;
+        let y = P::Base::deserialize_reader(reader)?;
         if x.is_zero() && y.is_zero() {
             Ok(Self::zero())
         } else {

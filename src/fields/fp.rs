@@ -8,7 +8,7 @@ use crate::fields::FieldElement;
 use borsh::{BorshDeserialize, BorshSerialize};
 
 #[cfg(feature = "borsh")]
-use borsh::maybestd::io::{Error, ErrorKind, Write};
+use borsh::maybestd::io::{Error, ErrorKind, Read, Write};
 
 macro_rules! field_impl {
     ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {
@@ -25,8 +25,8 @@ macro_rules! field_impl {
 
         #[cfg(feature = "borsh")]
         impl BorshDeserialize for $name {
-            fn deserialize(buf: &mut &[u8]) -> Result<Self, Error> {
-                let num = U256::deserialize(buf)?;
+            fn deserialize_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
+                let num = U256::deserialize_reader(reader)?;
                 Self::new(num).ok_or_else(|| {
                     Error::new(ErrorKind::InvalidData, "integer is not less than modulus")
                 })
